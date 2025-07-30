@@ -1,0 +1,22 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore environment files
+.env
+*.env
+
+# Ignore any local backups or zips
+*.zip
+*.tar.gz
+
+# Ignore virtual environments
+venv/
+env/
+.venv/
+
+# Ignore IDE or editor files
+.vscode/
+.idea/
+*.swp
+.DS_Store
