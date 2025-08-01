@@ -1,3 +1,11 @@
+name: MemeSniperX Bot
+
+on:
+  workflow_dispatch:  # Allows manual runs
+  push:               # Runs whenever you push changes to main branch
+    branches:
+      - main
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
@@ -20,3 +28,4 @@ jobs:
             echo "Bot crashed, retrying in 10s..."
             sleep 10
           done
+          
