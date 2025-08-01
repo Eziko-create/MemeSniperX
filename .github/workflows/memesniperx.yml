@@ -2,7 +2,7 @@ name: MemeSniperX Bot
 
 on:
   workflow_dispatch:  # Allows manual runs
-  push:               # Runs whenever you push changes to main branch
+  push:               # Runs whenever you push to main
     branches:
       - main
 
@@ -20,7 +20,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install requests
+          pip install requests websockets
 
       - name: Run MemeSniperX Bot (Auto-Restart)
         run: |
