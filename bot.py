@@ -64,6 +64,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-https://client-api.pump.fun/tokens/trending
