@@ -1,66 +1,55 @@
-import requests
-import time
-import socket
-import json
+import requests, time, json, asyncio
+import websockets
 
-PUMP_FUN_API = "https://client-api.pump.fun/tokens/trending"
-DEXSCREENER_API = "https://api.dexscreener.com/latest/dex/tokens"
+PUMP_URL = "https://api.pumpfunapi.org/pumpfun/new/tokens"
+DEX_BOOST_URL = "https://api.dexscreener.com/token-boosts/latest/v1"
+DEX_PROFILE_URL = "https://api.dexscreener.com/token-profiles/latest/v1"
+BONK_WS = "wss://pumpportal.fun/api/data"
 
-CHECK_INTERVAL = 30  # seconds
+CHECK_INTERVAL = 30
 
-def set_dns_fallback():
-    """Force Python to use Google DNS when DNS fails."""
+def fetch_pump():
     try:
-        # This only affects local resolvers like Termux, not GitHub Actions,
-        # but we'll log it anyway for debugging.
-        socket.setdefaulttimeout(5)
-        print("✅ DNS fallback initialized (Google 8.8.8.8 / Cloudflare 1.1.1.1).")
+        r = requests.get(PUMP_URL, timeout=10)
+        if r.status_code == 200:
+            return r.json()
+        print(f"Pump.fun HTTP {r.status_code} -> {r.text[:100]}")
     except Exception as e:
-        print(f"⚠️ DNS fallback setup failed: {e}")
+        print("Pump.fun Error:", e)
+    return []
 
-def fetch_pump_fun_tokens():
+def fetch_dexboosts():
     try:
-        response = requests.get(PUMP_FUN_API, timeout=10)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            print(f"Pump.fun HTTP {response.status_code} -> {response.text[:100]}")
-            return []
-    except requests.exceptions.RequestException as e:
-        print(f"Pump.fun API Error: {e}")
-        return []
+        r = requests.get(DEX_BOOST_URL, timeout=10)
+        if r.status_code == 200:
+            return r.json()
+        print(f"DexScreener Boosts HTTP {r.status_code}")
+    except Exception as e:
+        print("DexS Boost Error:", e)
+    return []
 
-def fetch_dexscreener_tokens():
-    try:
-        response = requests.get(DEXSCREENER_API, timeout=10)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            print(f"Dexscreener HTTP {response.status_code} -> {response.text[:100]}")
-            return []
-    except requests.exceptions.RequestException as e:
-        print(f"Dexscreener API Error: {e}")
-        return []
+async def bonk_listener():
+    async with websockets.connect(BONK_WS) as ws:
+        await ws.send(json.dumps({"method": "subscribeNewToken"}))
+        print("✅ Subscribed to Bonk.fun new token stream")
+        while True:
+            msg = await ws.recv()
+            data = json.loads(msg)
+            print("⚡ Bonk.fun New Token:", data)
 
 def main():
-    print("🚀 MemeSniperX Bot Started!")
-    set_dns_fallback()
-
+    print("🚀 MemeSniperX Bot Starting…")
+    asyncio.ensure_future(bonk_listener())
     while True:
-        print("🔄 Checking trending tokens...")
-
-        pump_tokens = fetch_pump_fun_tokens()
-        dex_tokens = fetch_dexscreener_tokens()
-
-        if not pump_tokens and not dex_tokens:
-            print("⚠️ Both APIs returned no data. Will retry after interval.")
-        else:
-            # Count processed tokens
-            processed_count = len(pump_tokens) if pump_tokens else 0
-            print(f"🔍 {processed_count} new token(s) processed.")
-
-        print(f"⏳ Waiting {CHECK_INTERVAL} seconds...\n")
+        print("\n🔄 Checking Pump.fun & DexScreener…")
+        pump_list = fetch_pump()
+        if pump_list:
+            print("👉 Pump.fun New Tokens:", pump_list)
+        dex_list = fetch_dexboosts()
+        if dex_list:
+            print("🔥 Dex Boosted Tokens:", dex_list)
         time.sleep(CHECK_INTERVAL)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
+        
